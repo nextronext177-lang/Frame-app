@@ -1,0 +1,279 @@
+from pathlib import Path
+import zipfile, textwrap, shutil
+
+root = Path("/mnt/data/FRAME_Android")
+if root.exists():
+    shutil.rmtree(root)
+(root/"app/src/main/java/com/frame/aesthetic").mkdir(parents=True)
+(root/"app/src/main/res/layout").mkdir(parents=True)
+(root/"app/src/main/res/drawable").mkdir(parents=True)
+(root/"app/src/main/res/mipmap-hdpi").mkdir(parents=True)
+(root/"app/src/main/res/values").mkdir(parents=True)
+
+files = {
+"settings.gradle.kts": r'''pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories { google(); mavenCentral() }
+}
+rootProject.name = "FRAME"
+include(":app")
+''',
+"build.gradle.kts": r'''plugins {
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+}
+''',
+"app/build.gradle.kts": r'''plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+android {
+    namespace = "com.frame.aesthetic"
+    compileSdk = 35
+    defaultConfig {
+        applicationId = "com.frame.aesthetic"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
+}
+dependencies {
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+}
+''',
+"app/src/main/AndroidManifest.xml": r'''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera.any" android:required="true"/>
+    <application
+        android:theme="@style/Theme.FRAME"
+        android:label="FRAME"
+        android:allowBackup="true"
+        android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+''',
+"app/src/main/res/values/styles.xml": r'''<resources>
+<style name="Theme.FRAME" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:fontFamily">sans</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:statusBarColor">#111111</item>
+    <item name="android:navigationBarColor">#111111</item>
+    <item name="android:colorAccent">#FFFFFF</item>
+</style>
+</resources>
+''',
+"app/src/main/res/values/colors.xml": r'''<resources><color name="black">#111111</color><color name="white">#FFFFFF</color></resources>''',
+"app/src/main/res/layout/activity_main.xml": r'''<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#111111">
+    <androidx.camera.view.PreviewView
+        android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent"/>
+    <View android:id="@+id/shade" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:background="#00000000"/>
+    <TextView android:id="@+id/logo" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="top|start" android:layout_marginStart="20dp" android:layout_marginTop="18dp"
+        android:text="FRAME" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="14sp"
+        android:letterSpacing="0.22"/>
+    <TextView android:id="@+id/mode" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="top|end" android:layout_marginEnd="18dp" android:layout_marginTop="15dp"
+        android:paddingHorizontal="10dp" android:paddingVertical="6dp" android:text="LIVE • MINIMAL"
+        android:textColor="#FFFFFF" android:textSize="11sp" android:background="#55000000"/>
+    <FrameLayout android:id="@+id/frameOverlay" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:layout_margin="34dp" android:background="@drawable/frame_border"/>
+    <TextView android:id="@+id/stamp" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start" android:layout_marginStart="40dp" android:layout_marginBottom="205dp"
+        android:textColor="#FFFFFF" android:textSize="11sp" android:fontFamily="monospace"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_gravity="bottom" android:orientation="vertical" android:padding="10dp"
+        android:background="#EE111111">
+        <HorizontalScrollView android:layout_width="match_parent" android:layout_height="54dp"
+            android:scrollbars="none">
+            <LinearLayout android:id="@+id/frameButtons" android:layout_width="wrap_content" android:layout_height="match_parent"
+                android:orientation="horizontal"/>
+        </HorizontalScrollView>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="82dp"
+            android:gravity="center" android:orientation="horizontal">
+            <Button android:id="@+id/flip" android:layout_width="56dp" android:layout_height="56dp"
+                android:text="↻" android:textSize="20sp" android:backgroundTint="#292929"/>
+            <View android:layout_width="45dp" android:layout_height="1dp"/>
+            <Button android:id="@+id/capture" android:layout_width="72dp" android:layout_height="72dp"
+                android:text="" android:background="@drawable/shutter"/>
+            <View android:layout_width="45dp" android:layout_height="1dp"/>
+            <Button android:id="@+id/filter" android:layout_width="56dp" android:layout_height="56dp"
+                android:text="✦" android:textSize="18sp" android:backgroundTint="#292929"/>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
+''',
+"app/src/main/res/drawable/frame_border.xml": r'''<shape xmlns:android="http://schemas.android.com/apk/res/android">
+<solid android:color="@android:color/transparent"/><stroke android:width="1dp" android:color="#CCFFFFFF"/>
+<corners android:radius="1dp"/>
+</shape>''',
+"app/src/main/res/drawable/shutter.xml": r'''<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+<solid android:color="#FFFFFFFF"/><stroke android:width="5dp" android:color="#777777"/>
+</shape>''',
+"app/src/main/java/com/frame/aesthetic/MainActivity.kt": r'''package com.frame.aesthetic
+
+import android.Manifest
+import android.content.ContentValues
+import android.content.pm.PackageManager
+import android.graphics.*
+import android.os.Bundle
+import android.provider.MediaStore
+import android.view.View
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var preview: PreviewView
+    private lateinit var cameraExecutor: ExecutorService
+    private var imageCapture: ImageCapture? = null
+    private var lens = CameraSelector.LENS_FACING_FRONT
+    private var frameName = "MINIMAL"
+    private var filter = 0
+    private val filters = listOf(
+        "Original", "Soft Film", "Vivid", "Mono", "Warm"
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        preview = findViewById(R.id.preview)
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        setupFrameButtons()
+        findViewById<Button>(R.id.flip).setOnClickListener {
+            lens = if (lens == CameraSelector.LENS_FACING_FRONT)
+                CameraSelector.LENS_FACING_BACK else CameraSelector.LENS_FACING_FRONT
+            startCamera()
+        }
+        findViewById<Button>(R.id.filter).setOnClickListener {
+            filter = (filter + 1) % filters.size
+            Toast.makeText(this, filters[filter], Toast.LENGTH_SHORT).show()
+        }
+        findViewById<Button>(R.id.capture).setOnClickListener { takePhoto() }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+            == PackageManager.PERMISSION_GRANTED) startCamera()
+        else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 10)
+
+        updateStamp()
+    }
+
+    private fun setupFrameButtons() {
+        val names = listOf("MINIMAL", "POLAROID", "35MM FILM", "DATE", "CLEAN")
+        val box = findViewById<LinearLayout>(R.id.frameButtons)
+        names.forEach { name ->
+            val b = Button(this).apply {
+                text = name
+                textSize = 10f
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.rgb(35,35,35))
+                setOnClickListener {
+                    frameName = name
+                    findViewById<TextView>(R.id.mode).text = "LIVE • $name"
+                    findViewById<FrameLayout>(R.id.frameOverlay).visibility =
+                        if (name == "CLEAN") View.GONE else View.VISIBLE
+                }
+            }
+            box.addView(b, LinearLayout.LayoutParams(120, 50).apply { setMargins(4,0,4,0) })
+        }
+    }
+
+    private fun startCamera() {
+        val future = ProcessCameraProvider.getInstance(this)
+        future.addListener({
+            val provider = future.get()
+            val selector = CameraSelector.Builder().requireLensFacing(lens).build()
+            val previewUse = Preview.Builder().build().also { it.setSurfaceProvider(preview.surfaceProvider) }
+            imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
+            provider.unbindAll()
+            provider.bindToLifecycle(this, selector, previewUse, imageCapture)
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun takePhoto() {
+        val capture = imageCapture ?: return
+        val name = "FRAME_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FRAME")
+        }
+        val output = ImageCapture.OutputFileOptions.Builder(
+            contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
+        ).build()
+        capture.takePicture(output, cameraExecutor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                    runOnUiThread { Toast.makeText(this@MainActivity, "Saved to Pictures/FRAME", Toast.LENGTH_SHORT).show() }
+                }
+                override fun onError(exc: ImageCaptureException) {
+                    runOnUiThread { Toast.makeText(this@MainActivity, "Capture failed", Toast.LENGTH_SHORT).show() }
+                }
+            })
+    }
+
+    private fun updateStamp() {
+        findViewById<TextView>(R.id.stamp).text =
+            SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.US).format(Date()).uppercase()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
+    }
+}
+''',
+"README.md": r'''# FRAME Android
+Native Kotlin + CameraX prototype.
+
+## Build
+Open this folder in Android Studio (Hedgehog/Iguana or newer), let Gradle sync, then:
+Build > Build APK(s)
+
+The generated debug APK is under:
+app/build/outputs/apk/debug/app-debug.apk
+
+## Features
+Live CameraX preview, front/back camera, aesthetic frame selector, timestamp, shutter and save to Pictures/FRAME.
+'''
+}
+
+for rel, content in files.items():
+    p = root/rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(content, encoding="utf-8")
+
+zip_path = Path("/mnt/data/FRAME_Android_Project.zip")
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in root.rglob("*"):
+        if p.is_file():
+            z.write(p, p.relative_to(root))
+
+print(f"Created native Android project: {zip_path}")
